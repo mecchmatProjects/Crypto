@@ -1,0 +1,116 @@
+Hello, Lee, Soniya. 
+I slightly improved and test my script on Python using Your executable running. 
+Final n="" is the answer to the task You gave me.
+Possibly script can be rewritten better way, if it is what You are looking for. 
+I send it in the attachments.
+Later today I will be busy with my other projects, so avialable only for a short call.  
+Considering Your second task, I still not understand it exacly.
+On the start of the next week, I should be free, but it depends also on the other clients.
+
+Best regards, Viktor
+
+
+Hello, Lee, Soniya. I did binary search approach - just haywire script on Python using Your executable running. Final n="" is the answer  possibly can be rewritten better, if it is what You are looking for. Send in attachments Best regards, Viktor
+
+Hello, Lee, Soniya. I did binary search approach - just haywire script on Python using Your executable running. 
+
+However, it currently produces results that make no sence, so I need time to research.
+
+  Best regards, Viktor
+
+
+
+
+0245460f56b8b6800600a792f46f5325838355e20b4dcd6e280ea1d2eee6e3a621
+6c503dc6cec1aa862e03b6b85d84d9d4026f093a254d62dc72b
+
+
+5HpHagT65TZzG1PH3CSu63k8DbpvD8s5ip55jsxADj8dimbfrmi
+
+029d9174acf6e48a091c21eef194d7f802f36b29d05b1cc367ff0ca09f31ad7572
+
+030b61cef27fd52eb5970f5c9a0011dd4997670b4436611a6340598044de69b86a 
+
+5a4b692786491915a2dcc88261c16a62d96ae5b34eec23df3310084b13389973
+f7502ae3a90626f08cfcb4bb8bac29bf4eb1e4b1a116dda13ae736c55963dcda
+
+
+start = 0000000000000000000004000000000000000000000000000
+end   = 0000000000000000000007fffffffffffffffffffffffffff
+
+
+
+
+pub key x: 0x40228f083b1c5fbd4922c9a1f0c0b224650ef998f14c6b8be2ac9f9613037d8c
+pub key y: 0x63a26f04b9a5f52a1e99502b520b8563bf924d3f3e483be7f2095bf5a0ce358
+038b65afa6e1bd91d7a2d1b426cccb91127dfd5890d6ecfd60279cfdbba75c8070
+
+pub key x: 0x40228f083b1c5fbd4922c9a1f0c0b224650ef998f14c6b8be2ac9f9613037d8c
+pub key y: 0x63a26f04b9a5f52a1e99502b520b8563bf924d3f3e483be7f2095bf5a0ce358
+038b65afa6e1bd91d7a2d1b426cccb91127dfd5890d6ecfd60279cfdbba75c8070
+
+
+pub key x: 0xe8463d3c49b77e2bf170dbecd2054c8bc792ceff347d08595c062579290ff746
+pub key y: 0x1b9d565dcc6e4416161f9297fcc03259b0d7e6e22737dd518759b5155c30f92b
+03ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c9
+
+pub key x: 0xe8463d3c49b77e2bf170dbecd2054c8bc792ceff347d08595c062579290ff746
+pub key y: 0x1b9d565dcc6e4416161f9297fcc03259b0d7e6e22737dd518759b5155c30f92b
+03ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c9
+
+
+
+
+
+
++ 3ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416ca
+03ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c9 #
+03ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416cc
+
+
+
+d= 03b420bad5028c9e5fce3609d038f880ab4fe2ec96bec8e352432d2f5e91da43f3
+
+pub key x: 0x8885bf5aafc0612aed18613d25d475d12ac7421198e613a650affc8270e0a4f6
+pub key y: 0x1efd8a2eb65420c263467e45854c94764d659649e3c0c421e5ef0f0aa728363e
+
+d= 03b420bad5028c9e5fce3609d038f880ab4fe2ec96bec8e352432d2f5e91da43f3
+
+pub key x: 0x8885bf5aafc0612aed18613d25d475d12ac7421198e613a650affc8270e0a4f6
+pub key y: 0x1efd8a2eb65420c263467e45854c94764d659649e3c0c421e5ef0f0aa728363e
+
+
+
+
+mel.exe -p 03EA1CC79FF6BE554FB04333AE959958C71CB54E7A8403258CB9B7781394B416C9 -s -n 2 -r 0:3ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c
+0270d21bd8cb7a2c4b16282f94319d2d41ca480eb5806ea8a33c131378cf087592 # + 1f50e63cffb5f2aa7d82199d74accac638e5aa73d420192c65cdbbc09ca5a0b65
+[+] Percent Complete: 0.0003f07a9a8f17c1de700911c0ce0789c58a6a4596a21b41fc9b099fecde7bc4478e # + 3ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416ca
+03ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c9 # target
+[+] Percent Complete: Finished
+
+mel.exe -p 03EA1CC79FF6BE554FB04333AE959958C71CB54E7A8403258CB9B7781394B416C9 -s -n 2 -r 0:3ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c9
+0270d21bd8cb7a2c4b16282f94319d2d41ca480eb5806ea8a33c131378cf087592 # + 1f50e63cffb5f2aa7d82199d74accac638e5aa73d420192c65cdbbc09ca5a0b65
+[+] Percent Complete: 0.0003f07a9a8f17c1de700911c0ce0789c58a6a4596a21b41fc9b099fecde7bc4478e # + 3ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416ca
+03ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c9 # target
+[+] Percent Complete: Finished
+
+
+0270d21bd8cb7a2c4b16282f94319d2d41ca480eb5806ea8a33c131378cf087592 # + 1f50e63cffb5f2aa7d82199d74accac638e5aa73d420192c65cdbbc09ca5a0b65
+[+] Percent Complete: 0.0003f07a9a8f17c1de700911c0ce0789c58a6a4596a21b41fc9b099fecde7bc4478e # + 3ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416ca
+03ea1cc79ff6be554fb04333ae959958c71cb54e7a8403258cb9b7781394b416c9 # target
+[+] Percent Complete: Finished
+
+
+Hello!
+I have read through Your plan, and from the first glimpse it is looking ok, but again I am not sure that understand everything.
+I still do not understand the issue with negative values, because in the script I have sent we do not obtain such kind of values.
+Maybe we can add into the algorithm optional checking on negative/positive or more sophisticated ways to select the iterations,
+it looks possible. 
+I think deeper understanding of what the general task this algorithm is designed for and our full scope of constraints, could help me in understending.
+
+According to the contract, Your wage looks decent - if You will send me the contract, I could start working on this project.
+Best regards, Viktor.
+
+
+
+
