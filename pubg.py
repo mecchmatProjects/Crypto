@@ -1,6 +1,8 @@
 import ecdsa
 import hashlib
 
+CREATE_FILE = False
+
 def generate_key_pair_sequence(start_range, end_range, step=1):
     private_key = int(start_range, 16)
 
@@ -25,8 +27,24 @@ if __name__ == "__main__":
     end_range = input("Enter the ending range (hexadecimal format): ")
     step = int(input("Enter the step(hexadecimal)"),16)
 
-    for private_key, compressed_public_key,public_key in generate_key_pair_sequence(start_range, end_range,step):
-        print("Private Key:", private_key)
-        print("Compressed Public Key:", compressed_public_key,len(compressed_public_key))
-        #print("Public Key:", str(public_key), len(public_key))
-        print("---------------------------")
+    if CREATE_FILE:
+        with open("pubkeyslist1.h","w") as f:
+            print("#include <stdio.h>", file=f)
+            print("\n\nchar* RANGE_PK [] = {", file=f)
+            for private_key, compressed_public_key,public_key in generate_key_pair_sequence(start_range, end_range,step):
+                #print("Private Key:", private_key)
+                # print("Compressed Public Key:", compressed_public_key,len(compressed_public_key))
+                # print("Public Key:", str(public_key), len(public_key))
+                # print("---------------------------")
+                print("\""+compressed_public_key+"\", ", file=f)
+            print("};\n", file=f)
+            print(file=f)
+
+        print("done")
+    else:
+        for private_key, compressed_public_key, public_key in generate_key_pair_sequence(start_range, end_range, step):
+            # print("Private Key:", private_key)
+            # print("Compressed Public Key:", compressed_public_key,len(compressed_public_key))
+            # print("Public Key:", str(public_key), len(public_key))
+            # print("---------------------------")
+            print("\"" + compressed_public_key + "\", ")
