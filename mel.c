@@ -386,7 +386,7 @@ int main(int argc, char **argv)  {
 	mpz_init(target_publickey.x);
 	mpz_init_set_ui(target_publickey.y,0);
 
-    //fprintf(stderr,"N=%zu\n",SIZE_PK);
+    fprintf(stderr,"N=%zu\n",SIZE_PK);
     //unsigned hv = Hash2("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798");
     //fprintf(stderr,"HW=%u\n",hv);
 
@@ -665,6 +665,14 @@ int main(int argc, char **argv)  {
 
 			// sort the array of keys
 			//sort_str_array(RANGE_PK, SIZE_PK);
+			fprintf(stderr,"inst");
+			HASHES_PK = install_hash();
+
+			if(!HASHES_PK){
+                fprintf(stderr,"error!!!");
+                return -1;
+			}
+
 			modify_array();
 
 			int looked_up_val = -1;
@@ -712,12 +720,13 @@ int main(int argc, char **argv)  {
 						Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
 
 						generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+						//	fprintf(OUTPUT,"%s\n",str_publickey);
 
  						//looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
  						//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
 						unsigned hash_val = Hash2(str_publickey); //  RSHash(str_publickey);
 						looked_up_val = HASHES_PK[hash_val]-1;
-
+						//fprintf(OUTPUT,"%s\n",str_publickey);
 
 						if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
 							fprintf(OUTPUT,"%s\n",str_publickey);
@@ -867,6 +876,7 @@ int main(int argc, char **argv)  {
 		mpz_clear(dst_publickey.y);
 		mpz_clear(base_key);
 		mpz_clear(sum_key);
+		if(HASHES_PK) free(HASHES_PK);
 	}
 	else	{
 #ifdef DEBUG

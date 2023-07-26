@@ -86,10 +86,18 @@ if __name__ == "__main__":
 
         else:
             with open(HASH_FILE, "w") as f:
-                print("#include <stdio.h>", file=f)
-                print("\n\nint HASHES_PK[{}] = ".format(H_SIZE), file=f,end="")
-                print("{0,};\n\n", file=f)
-
+                print("#include <stdlib.h>", file=f)
+                # print("\n\nint HASHES_PK[{}] = ".format(H_SIZE), file=f,end="")
+                # print("{0,};\n\n", file=f)
+                print("\n int* HASHES_PK;\n".format(H_SIZE), file=f)
+                print("int* install_hash(){", file=f)
+                print("\n\tint* p = (int*) calloc({},sizeof(int));".format(H_SIZE), file=f)
+                print("\tif (!p) { ", file=f)
+                print("\t\tprintf(\"Cannot allocate {} size array!\");", file=f)
+                print("\t\t return NULL;", file=f)
+                print("\t}\n", file=f)
+                print("\treturn p;\n", file=f)
+                print("}\n", file=f)
                 print("void modify_array(){\n",file=f)
 
                 count = 0
