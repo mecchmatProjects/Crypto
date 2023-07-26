@@ -15,8 +15,8 @@
 #include "sha256/sha256.h"
 
 //mel.exe -p 0358ac33391b50608364883e762f290a50d9fd516ae60c6b276194ff2c1b3ec038 -s -n 300 -r 1:F0000
-//#include "pubkeyslist1.h"
-#include "pubkeyslist.h"
+#include "pubkeyslist1.h"
+#include "hash_pk.h"
 
 const char *version = "v2.3";
 const char *EC_constant_N = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
@@ -45,6 +45,8 @@ const char *looks[2] = {"compress","uncompress"};
 
 size_t SIZE_PK =  sizeof(RANGE_PK)/sizeof(RANGE_PK[0]);// 0xffff;// 0xffffffff;
 
+size_t SIZE_HASH_PK =  sizeof(HASHES_PK)/sizeof(HASHES_PK[0]);//
+
 int pstrcmp( const void* a, const void* b){
   return strcmp( *(const char**)a, *(const char**)b );
 }
@@ -53,8 +55,45 @@ void sort_str_array(char* range_pk[], int size_array){
    qsort(range_pk, size_array, sizeof(range_pk[0]), pstrcmp);
 }
 
+unsigned RSHash(char* str)
+{
+    unsigned b      = 378551;
+    unsigned a      = 63689;
+    unsigned hash   = 0;
+    unsigned H_SIZE = 0xFFFFFF;
 
+    for(size_t i = 0; i < strlen(str); i++)
+    {
+        unsigned val = (str[i]-'0');
+        if (val>10){
+            val = str[i] - 'a' + 10;
+        }
+        hash = (hash * a + val) % H_SIZE;
+        a    = (a * b) % H_SIZE;
+    }
 
+    return hash;
+ }
+
+ unsigned Hash2(char* s){
+
+    unsigned long long hash_res = 0;
+    unsigned long long H_SIZE = 0xFFFFFFF;
+
+    unsigned p = 31;
+    for(int i=0; i<strlen(s);i++){
+        unsigned val = (s[i]-'0');
+        if (val>10){
+            val = s[i] - 'a' + 10;
+        }
+        hash_res *= p;
+        hash_res %= H_SIZE;
+        hash_res += val;
+        hash_res %= H_SIZE;
+        //fprintf(stderr,"r=%u\n",hash_res);
+    }
+    return (unsigned)hash_res;
+ }
 
 void showhelp();
 void set_format(char *param);
@@ -348,6 +387,8 @@ int main(int argc, char **argv)  {
 	mpz_init_set_ui(target_publickey.y,0);
 
     //fprintf(stderr,"N=%zu\n",SIZE_PK);
+    //unsigned hv = Hash2("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798");
+    //fprintf(stderr,"HW=%u\n",hv);
 
 	while ((c = getopt(argc, argv, "hvaszxRb:n:o:p:r:f:l:")) != -1) {
 
@@ -623,7 +664,8 @@ int main(int argc, char **argv)  {
 			mpz_set(sum_key,base_key);
 
 			// sort the array of keys
-			sort_str_array(RANGE_PK, SIZE_PK);
+			//sort_str_array(RANGE_PK, SIZE_PK);
+			modify_array();
 
 			int looked_up_val = -1;
 
@@ -641,10 +683,12 @@ int main(int argc, char **argv)  {
 
 						generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
 
-                        //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
- 						looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+                                                //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
+ 						//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+						unsigned hash_val = Hash2(str_publickey);// RSHash(str_publickey);
+						looked_up_val = HASHES_PK[hash_val]-1;
 
-						     fprintf(stderr,"out:\n ");
+
 						if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
 							//fprintf(OUTPUT,"%s\n",str_publickey);
 							gmp_fprintf(OUTPUT, "%0.64Zx\n", dst_publickey.x);
@@ -668,9 +712,11 @@ int main(int argc, char **argv)  {
 						Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
 
 						generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
-                        //str_publickey[66]='\0';
+
  						//looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
- 						looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+ 						//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+						unsigned hash_val = Hash2(str_publickey); //  RSHash(str_publickey);
+						looked_up_val = HASHES_PK[hash_val]-1;
 
 
 						if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
@@ -691,10 +737,10 @@ int main(int argc, char **argv)  {
 						}
 
 						if (looked_up_val>=0){
-                            fprintf(stderr,"Our Private Key located in the Interval, we break the loop\n");
+                            				fprintf(stderr,"Our Private Key is located in the Interval, we break the loop\n");
 
-				         }
-						}
+				       		  }
+					}
 
 					break;
 					case 1: //rmd160
