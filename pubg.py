@@ -5,8 +5,10 @@ import hashlib
 CREATE_FILE = True
 FNAME = "pubkeyslist.h"
 
-HASH_FILE = "hash_pk.h"
-H_SIZE = 0xFFFFFFF
+HASH_FILE = None # "hash_pk.h"
+HASH_FILE2 = "hash_pk2.h"
+
+H_SIZE = 0x3FFFFFF
 def RSHash(s):
 
     b = 378551
@@ -24,6 +26,19 @@ def Hash2(s):
     hash_res = 0
 
     p = 31
+    for c in s:
+        hash_res *= p
+        hash_res %= H_SIZE
+        hash_res += int(c,16)
+        hash_res %= H_SIZE
+        # print(hash_res)
+    return hash_res
+
+def Hash3(s):
+
+    hash_res = 0
+
+    p = 37
     for c in s:
         hash_res *= p
         hash_res %= H_SIZE
@@ -55,6 +70,15 @@ def generate_key_pair_sequence(start_range, end_range, step=1):
 
 if __name__ == "__main__":
 
+    a,b = 0x200000000000000000000000000000000, 0x3ffffffffffffffffffffffffffffffff
+    c   = 0xa817291171418bbb8a8529a00c8c4d22
+    # 1000000010000000
+    # 10000000
+    # 234049d583982292b95c152b0d0ab13f0b52caf1dc4dcde171ba007cf42
+    d = ((b-a)//10000000)
+    d = 940856
+    print(f"{d:0x}")
+
     if len(sys.argv) <= 2:
         start_range = input("Enter the starting range (hexadecimal format): ")
         end_range = input("Enter the ending range (hexadecimal format): ")
@@ -68,9 +92,11 @@ if __name__ == "__main__":
         end_range = sys.argv[2]
         step = int(sys.argv[3],16)
 
+
+
     if CREATE_FILE:
 
-        if HASH_FILE is None:
+        if FNAME is None:
             with open(FNAME, "w") as f:
                 print("#include <stdio.h>", file=f)
                 print("\n\nchar* RANGE_PK [] = {", file=f)
@@ -85,35 +111,71 @@ if __name__ == "__main__":
                 print(file=f)
 
         else:
-            with open(HASH_FILE, "w") as f:
-                print("#include <stdlib.h>", file=f)
-                # print("\n\nint HASHES_PK[{}] = ".format(H_SIZE), file=f,end="")
-                # print("{0,};\n\n", file=f)
-                print("\n int* HASHES_PK;\n".format(H_SIZE), file=f)
-                print("int* install_hash(){", file=f)
-                print("\n\tint* p = (int*) calloc({},sizeof(int));".format(H_SIZE), file=f)
-                print("\tif (!p) { ", file=f)
-                print("\t\tprintf(\"Cannot allocate {} size array!\");", file=f)
-                print("\t\t return NULL;", file=f)
-                print("\t}\n", file=f)
-                print("\treturn p;\n", file=f)
-                print("}\n", file=f)
-                print("void modify_array(){\n",file=f)
+            if HASH_FILE is not None:
+                with open(HASH_FILE, "w") as f:
+                    print("#include <stdlib.h>", file=f)
+                    # print("\n\nint HASHES_PK[{}] = ".format(H_SIZE), file=f,end="")
+                    # print("{0,};\n\n", file=f)
+                    print("\n int* HASHES_PK;\n", file=f)
+                    print("int* install_hash(){", file=f)
+                    print("\n\tint* p = (int*) calloc({},sizeof(int));".format(H_SIZE), file=f)
+                    print("\tif (!p) { ", file=f)
+                    print("\t\tprintf(\"Cannot allocate {} size array!\");".format(H_SIZE), file=f)
+                    print("\t\t return NULL;", file=f)
+                    print("\t}\n", file=f)
+                    print("\treturn p;\n", file=f)
+                    print("}\n", file=f)
+                    print("void modify_array(){\n",file=f)
 
-                count = 0
-                for private_key, compressed_public_key, public_key in generate_key_pair_sequence(start_range, end_range,
-                                                                                                 step):
-                    # print("Private Key:", private_key)
-                    # print("Compressed Public Key:", compressed_public_key,len(compressed_public_key))
-                    # print("Public Key:", str(public_key), len(public_key))
-                    # print("---------------------------")
-                    count += 1
-                    #h = RSHash(compressed_public_key)
-                    h = Hash2(compressed_public_key)
-                    print("\tHASHES_PK[" + str(h) + "]=" + str(count) + ";", file=f)
+                    count = 0
+                    for private_key, compressed_public_key, public_key in generate_key_pair_sequence(start_range, end_range,
+                                                                                                     step):
+                        # print("Private Key:", private_key)
+                        # print("Compressed Public Key:", compressed_public_key,len(compressed_public_key))
+                        # print("Public Key:", str(public_key), len(public_key))
+                        # print("---------------------------")
+                        count += 1
+                        #h = RSHash(compressed_public_key)
+                        h = Hash2(compressed_public_key)
+                        print("\tHASHES_PK[" + str(h) + "]=" + str(count) + ";", file=f)
 
-                print("};\n", file=f)
-                print(file=f)
+                    print("};\n", file=f)
+                    print(file=f)
+
+            print("File")
+            if HASH_FILE2 is not None:
+                print("HF2")
+                with open(HASH_FILE2, "w") as f:
+                    print("#include <stdlib.h>", file=f)
+                    # print("\n\nint HASHES_PK[{}] = ".format(H_SIZE), file=f,end="")
+                    # print("{0,};\n\n", file=f)
+                    print("\n // for {}-{}, step {} \n".format(start_range, end_range, step), file=f)
+                    print("\n int* HASHES_PK2;\n", file=f)
+                    print("int* install_hash2(){", file=f)
+                    print("\n\tint* p = (int*) calloc({},sizeof(int));".format(H_SIZE), file=f)
+                    print("\tif (!p) { ", file=f)
+                    print("\t\tprintf(\"Cannot allocate {} size array!\");".format(H_SIZE), file=f)
+                    print("\t\t return NULL;", file=f)
+                    print("\t}\n", file=f)
+                    print("\treturn p;\n", file=f)
+                    print("}\n", file=f)
+                    print("void modify_array2(){\n", file=f)
+
+                    count = 0
+                    for private_key, compressed_public_key, public_key in generate_key_pair_sequence(start_range,
+                                                                                                     end_range,
+                                                                                                     step):
+                        # print("Private Key:", private_key)
+                        # print("Compressed Public Key:", compressed_public_key,len(compressed_public_key))
+                        # print("Public Key:", str(public_key), len(public_key))
+                        # print("---------------------------")
+                        count += 1
+                        # h = RSHash(compressed_public_key)
+                        h = Hash3(compressed_public_key)
+                        print("\tHASHES_PK2[" + str(h) + "]=" + str(count) + ";", file=f)
+
+                    print("};\n", file=f)
+                    print(file=f)
 
         print("done")
     else:
@@ -123,4 +185,4 @@ if __name__ == "__main__":
             # print("Public Key:", str(public_key), len(public_key))
             # print("---------------------------")
             print("\"" + compressed_public_key + "\", ")
-            # Hash2(compressed_public_key)
+            print(Hash2(compressed_public_key))

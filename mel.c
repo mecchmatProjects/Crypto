@@ -14,9 +14,12 @@
 #include "rmd160/rmd160.h"
 #include "sha256/sha256.h"
 
+
 //mel.exe -p 0358ac33391b50608364883e762f290a50d9fd516ae60c6b276194ff2c1b3ec038 -s -n 300 -r 1:F0000
-#include "pubkeyslist1.h"
+//#include "pubkeyslist1.h"
 #include "hash_pk.h"
+#include "hash_pk2.h"
+
 
 const char *version = "v2.3";
 const char *EC_constant_N = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
@@ -43,7 +46,7 @@ const char *looks[2] = {"compress","uncompress"};
 #define MAX_DOM "0000000000000000000000ffffffff"
 
 
-size_t SIZE_PK =  sizeof(RANGE_PK)/sizeof(RANGE_PK[0]);// 0xffff;// 0xffffffff;
+//size_t SIZE_PK =  sizeof(RANGE_PK)/sizeof(RANGE_PK[0]);// 0xffff;// 0xffffffff;
 
 size_t SIZE_HASH_PK =  sizeof(HASHES_PK)/sizeof(HASHES_PK[0]);//
 
@@ -60,7 +63,7 @@ unsigned RSHash(char* str)
     unsigned b      = 378551;
     unsigned a      = 63689;
     unsigned hash   = 0;
-    unsigned H_SIZE = 0xFFFFFF;
+    unsigned H_SIZE = 0x7FFFFFF;
 
     for(size_t i = 0; i < strlen(str); i++)
     {
@@ -75,15 +78,15 @@ unsigned RSHash(char* str)
     return hash;
  }
 
- unsigned Hash2(char* s){
+ int Hash2(char* s){
 
-    unsigned long long hash_res = 0;
-    unsigned long long H_SIZE = 0xFFFFFFF;
+    long long hash_res = 0;
+    long long H_SIZE = 0x3FFFFFF;
 
-    unsigned p = 31;
+    int p = 31;
     for(int i=0; i<strlen(s);i++){
-        unsigned val = (s[i]-'0');
-        if (val>10){
+        int val = (s[i]-'0');
+        if ((val>10) || (val<0)){
             val = s[i] - 'a' + 10;
         }
         hash_res *= p;
@@ -92,7 +95,27 @@ unsigned RSHash(char* str)
         hash_res %= H_SIZE;
         //fprintf(stderr,"r=%u\n",hash_res);
     }
-    return (unsigned)hash_res;
+    return (int)hash_res;
+ }
+
+  int Hash3(char* s){
+
+    long long hash_res = 0;
+    long long H_SIZE = 0x3FFFFFF;
+
+    int p = 37;
+    for(int i=0; i<strlen(s);i++){
+        int val = (s[i]-'0');
+        if ((val>10) || (val<0)){
+            val = s[i] - 'a' + 10;
+        }
+        hash_res *= p;
+        hash_res %= H_SIZE;
+        hash_res += val;
+        hash_res %= H_SIZE;
+        //fprintf(stderr,"r=%u\n",hash_res);
+    }
+    return (int)hash_res;
  }
 
 void showhelp();
@@ -386,9 +409,9 @@ int main(int argc, char **argv)  {
 	mpz_init(target_publickey.x);
 	mpz_init_set_ui(target_publickey.y,0);
 
-    fprintf(stderr,"N=%zu\n",SIZE_PK);
-    //unsigned hv = Hash2("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798");
-    //fprintf(stderr,"HW=%u\n",hv);
+    //fprintf(stderr,"N=%zu\n",SIZE_PK);
+     unsigned hv = Hash2("024e43a408f189bf803c60bf993f6604ecd6211c77e27ded87764111dc5d5127fb");
+    fprintf(stderr,"HW=%u\n",hv);
 
 	while ((c = getopt(argc, argv, "hvaszxRb:n:o:p:r:f:l:")) != -1) {
 
@@ -497,16 +520,59 @@ int main(int argc, char **argv)  {
 		if(FLAG_RANDOM)	{
 			gmp_randinit_mt(state);
 			gmp_randseed_ui(state, ((int)clock()) + ((int)time(NULL)) );
+
+     		//sort_str_array(RANGE_PK, SIZE_PK);
+			fprintf(stderr,"install hash;\n");
+			HASHES_PK = install_hash();
+
+			if(!HASHES_PK){
+                fprintf(stderr,"error!!!");
+                return -1;
+			}
+
+			modify_array();
+
+        	HASHES_PK2 = install_hash();
+
+			if(!HASHES_PK2){
+                fprintf(stderr,"error!!!");
+                return -1;
+			}
+
+			modify_array2();
+
+
+			int looked_up_val = -1;
+
+
 			for(i = 0; i < M;i++)	{
 				mpz_urandomm(base_key,state,diff);
 				Scalar_Multiplication(G,&base_publickey,base_key);
 				Point_Negation(&base_publickey,&negated_publickey);
 				Point_Addition(&base_publickey,&target_publickey,&dst_publickey);
 
+
+
 				switch(FLAG_FORMART)	{
 					case 0: //Publickey
 					if(FLAG_ADD) {
 						generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+
+
+                         //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
+ 						//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+						int hash_val =  Hash2(str_publickey);//
+
+						looked_up_val = HASHES_PK[hash_val]-1;
+						//fprintf(OUTPUT,"%s\n",str_publickey);
+						if (looked_up_val>=0){
+                          int looked_up_val2 = HASHES_PK2[Hash3(str_publickey)]-1; ; //  recheck collision
+                          if(looked_up_val2!=looked_up_val){
+                            looked_up_val = -1;
+                          }
+						}
+
+
 						if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
 							//fprintf(OUTPUT,"%s\n",str_publickey);
 							gmp_fprintf(OUTPUT, "%0.64Zx\n", dst_publickey.x);
@@ -527,6 +593,22 @@ int main(int argc, char **argv)  {
 						if(FLAG_SUB) {
 						Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
 						generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+
+
+                         //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
+ 						//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+						int hash_val =  Hash2(str_publickey);//
+
+						looked_up_val = HASHES_PK[hash_val]-1;
+						//fprintf(OUTPUT,"%s\n",str_publickey);
+						if (looked_up_val>=0){
+                          int looked_up_val2 = HASHES_PK2[Hash3(str_publickey)]-1; ; //  recheck collision
+                          if(looked_up_val2!=looked_up_val){
+                            looked_up_val = -1;
+                          }
+						}
+
+
 						if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
 							//fprintf(OUTPUT,"%s\n",str_publickey);
 							gmp_fprintf(OUTPUT, "%0.64Zx\n", dst_publickey.x);
@@ -605,6 +687,9 @@ int main(int argc, char **argv)  {
                     printf("\r[+] Percent Complete: %0.2lf", perc);
                     fflush(stdout);
                 }
+                if(looked_up_val>=0){
+                    break;
+                }
 			}
 
 			switch(FLAG_FORMART)	{
@@ -652,6 +737,8 @@ int main(int argc, char **argv)  {
 					printf("\r[+] Percent Complete: Finished");
                     fflush(stdout);
                 }
+
+
 		}
 		else	{
 
@@ -663,17 +750,31 @@ int main(int argc, char **argv)  {
 			mpz_set(sum_publickey.y,base_publickey.y);
 			mpz_set(sum_key,base_key);
 
+			//?? should not we do the add/sub of min_range????
+			/*Scalar_Multiplication(G,&diff_publickey,min_range);
+			  mpz_add(sum_key,min_range);
+                          mpz_add(sum_publickey.x,diff_publickey.x);
+			  mpz_add(sum_publickey.y,diff_publickey.y);
+			*/
+
 			// sort the array of keys
 			//sort_str_array(RANGE_PK, SIZE_PK);
-			fprintf(stderr,"inst");
+			fprintf(stderr,"install hash;\n");
 			HASHES_PK = install_hash();
 
 			if(!HASHES_PK){
-                fprintf(stderr,"error!!!");
-                return -1;
+               			 fprintf(stderr,"error!!!");
+                		return -1;
 			}
 
 			modify_array();
+
+			HASHES_PK2 = install_hash2();
+			if(!HASHES_PK2){
+           			 fprintf(stderr,"error!!!");
+               		return -1;
+			}
+			modify_array2();
 
 			int looked_up_val = -1;
 
@@ -691,10 +792,19 @@ int main(int argc, char **argv)  {
 
 						generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
 
-                                                //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
+                         //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
  						//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
-						unsigned hash_val = Hash2(str_publickey);// RSHash(str_publickey);
+						int hash_val =  Hash2(str_publickey);//
+
 						looked_up_val = HASHES_PK[hash_val]-1;
+						//fprintf(OUTPUT,"%s\n",str_publickey);
+						if (looked_up_val>=0){
+                          int looked_up_val2 = HASHES_PK2[Hash3(str_publickey)]-1; ; //  recheck collision
+                          if(looked_up_val2!=looked_up_val){
+                            looked_up_val = -1;
+                          }
+						}
+
 
 
 						if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
@@ -724,9 +834,16 @@ int main(int argc, char **argv)  {
 
  						//looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
  						//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
-						unsigned hash_val = Hash2(str_publickey); //  RSHash(str_publickey);
+						int hash_val =  Hash2(str_publickey);//
+
 						looked_up_val = HASHES_PK[hash_val]-1;
 						//fprintf(OUTPUT,"%s\n",str_publickey);
+						if (looked_up_val>=0){
+                          int looked_up_val2 = HASHES_PK2[Hash3(str_publickey)]-1; ; //  recheck collision
+                          if(looked_up_val2!=looked_up_val){
+                            looked_up_val = -1;
+                          }
+						}
 
 						if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
 							fprintf(OUTPUT,"%s\n",str_publickey);
@@ -747,6 +864,7 @@ int main(int argc, char **argv)  {
 
 						if (looked_up_val>=0){
                             				fprintf(stderr,"Our Private Key is located in the Interval, we break the loop\n");
+                            				fprintf(stderr,"Item Number %d, hashcode: %u \n",looked_up_val,hash_val);
 
 				       		  }
 					}
@@ -877,6 +995,7 @@ int main(int argc, char **argv)  {
 		mpz_clear(base_key);
 		mpz_clear(sum_key);
 		if(HASHES_PK) free(HASHES_PK);
+		if(HASHES_PK2) free(HASHES_PK2);
 	}
 	else	{
 #ifdef DEBUG
