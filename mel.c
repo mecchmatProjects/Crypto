@@ -50,6 +50,8 @@ const char *looks[2] = {"compress","uncompress"};
 
 size_t SIZE_HASH_PK =  sizeof(HASHES_PK)/sizeof(HASHES_PK[0]);//
 
+size_t SIZE_DB = 0x3FFFF;
+
 int pstrcmp( const void* a, const void* b){
   return strcmp( *(const char**)a, *(const char**)b );
 }
@@ -410,7 +412,7 @@ int main(int argc, char **argv)  {
 	mpz_init_set_ui(target_publickey.y,0);
 
     //fprintf(stderr,"N=%zu\n",SIZE_PK);
-     unsigned hv = Hash2("024e43a408f189bf803c60bf993f6604ecd6211c77e27ded87764111dc5d5127fb");
+    int hv = Hash2("024e43a408f189bf803c60bf993f6604ecd6211c77e27ded87764111dc5d5127fb");
     fprintf(stderr,"HW=%u\n",hv);
 
 	while ((c = getopt(argc, argv, "hvaszxRb:n:o:p:r:f:l:")) != -1) {
@@ -687,7 +689,7 @@ int main(int argc, char **argv)  {
                     printf("\r[+] Percent Complete: %0.2lf", perc);
                     fflush(stdout);
                 }
-                if(looked_up_val>=0){
+                if(looked_up_val>=0 && looked_up_val<SIZE_DB){
                     break;
                 }
 			}
@@ -862,7 +864,7 @@ int main(int argc, char **argv)  {
 							gmp_fprintf(OUTPUT, "%s # - %Zx\n", str_publickey, sum_key);
 						}
 
-						if (looked_up_val>=0){
+						if (looked_up_val>=0 && looked_up_val<SIZE_DB){
                             				fprintf(stderr,"Our Private Key is located in the Interval, we break the loop\n");
                             				fprintf(stderr,"Item Number %d, hashcode: %u \n",looked_up_val,hash_val);
 
@@ -932,7 +934,8 @@ int main(int argc, char **argv)  {
                     fflush(stdout);
                 }
 
-                if(looked_up_val>=0){
+                if(looked_up_val>=0 && looked_up_val<SIZE_DB){
+
                     break;
                 }
 			}
