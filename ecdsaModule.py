@@ -9,7 +9,11 @@ g = (0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798, 0x483ad
 h = 1
 
 curve = Curve(a, b, SubGroup(p, g, n, h), name)
-pubKey = curve.g*1
+pubKey = curve.g* 0x000000000000000000000000000000000000147ae147ae147ae147ae147ae148
+
+print("pk", pubKey)
+print(f"pk({pubKey.x:0x}, {pubKey.y:0x})")
+
 
 for i in range(10):
     pubKey = curve.g * i

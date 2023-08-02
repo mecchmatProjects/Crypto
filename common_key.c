@@ -12,6 +12,7 @@
 #include "sha256/sha256.h"
 
 long long H_SIZE = 0x3FFFFFF; // Size of Hash to keep the data
+int size_chunk = 0x3FFFFF; // size of DB
 
 // names of files
 char NAME_FILE_PK[255] = "Private_key.txt\0";
@@ -117,7 +118,7 @@ int main(int argc, char **argv)  {
   int* answers = (int*) malloc(resulting_keys * sizeof(answers[0]));
   int  answers_count = 0;
 
-  int size_chunk = 0x3FFFFF;
+
 
   FILE * f_pk = fopen(NAME_FILE_PK,"rt");
   if(!f_pk){

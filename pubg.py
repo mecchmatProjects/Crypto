@@ -5,7 +5,7 @@ import hashlib
 CREATE_FILE = True
 FNAME = "pubkeyslist.h"
 
-HASH_FILE = None # "hash_pk.h"
+HASH_FILE = "hash_pk.h"
 HASH_FILE2 = "hash_pk2.h"
 
 H_SIZE = 0x3FFFFFF
