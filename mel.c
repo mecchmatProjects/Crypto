@@ -128,6 +128,7 @@ void set_look(char *param);
 void set_bit(char *param);
 void set_publickey(char *param);
 void set_range(char *param);
+void set_divisor(char *param);
 void generate_straddress(struct Point *publickey,bool compress,char *dst);
 void generate_strrmd160(struct Point *publickey,bool compress,char *dst);
 void generate_strpublickey(struct Point *publickey,bool compress,char *dst);
@@ -146,9 +147,10 @@ char str_publickey[131];
 char str_rmd160[41];
 char str_address[41];
 
-struct Point target_publickey,base_publickey,sum_publickey,negated_publickey,dst_publickey;
+struct Point target_publickey,base_publickey,sum_publickey,negated_publickey,dst_publickey, temp_pt;
 
 struct Point target_publickey0,base_publickey0,negated,dst_publickey0;
+
 
 int FLAG_RANGE = 0;
 int FLAG_BIT = 0;
@@ -161,11 +163,16 @@ int FLAG_LOOK = 0;
 int FLAG_ADD = 0;
 int FLAG_SUB = 0;
 int FLAG_MODE = 0;
-int FLAG_N;
+
+int FLAG_DIVISOR = 0;
+int FLAG_MULTIPLIER = 0;
+
+int FLAG_N = 0;
 uint64_t N = 0,M;
 
 mpz_t min_range,max_range,diff,TWO,base_key,sum_key,dst_key;
 gmp_randstate_t state;
+mpz_t divisor,inversemultiplier;
 
 void Point_Doubling(struct Point *P, struct Point *R)	{
 
@@ -456,10 +463,18 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 	Point_Negation(&base_publickey0,&negated);
 
 	Point_Addition(&negated,&target_publickey0,&dst_publickey0);
-	generate_strpublickey(&dst_publickey0,FLAG_LOOK == 0,str_publickey);
 
-	gmp_fprintf(stderr, "Subtraction Dest Key: %0.64Zx, %0.64Zx\n", dst_publickey0.x, dst_publickey0.y);
-    fprintf(stderr,"Public Key :%s\n",str_publickey);
+	gmp_fprintf(stderr, "Minuend: %0.64Zx, %0.64Zx\n", target_publickey0.x, target_publickey0.y);
+	gmp_fprintf(stderr, "Subtrahend: %0.64Zx, %0.64Zx\n", base_publickey0.x, base_publickey0.y);
+	gmp_fprintf(stderr, "Difference Key: %0.64Zx, %0.64Zx\n", dst_publickey0.x, dst_publickey0.y);
+
+	generate_strpublickey(&target_publickey0,FLAG_LOOK == 0,str_publickey);
+    fprintf(stderr," Public keys:\n +%s\n",str_publickey);
+    generate_strpublickey(&base_publickey0,FLAG_LOOK == 0,str_publickey);
+    fprintf(stderr," Public keys:\n +%s\n",str_publickey);
+    generate_strpublickey(&dst_publickey0,FLAG_LOOK == 0,str_publickey);
+    fprintf(stderr," Public keys:\n +%s\n",str_publickey);
+
 
     mpz_clear(base_publickey0.x);
 	mpz_clear(base_publickey0.y);
@@ -476,22 +491,29 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
     // fprintf(stderr,"HW=%u\n",hv);
 #endif
 
-	while ((c = getopt(argc, argv, "hvaszxRb:n:o:p:r:f:l:")) != -1) {
-
-		switch(c) {
-			case 'x':
+	while ((c = getopt(argc, argv, "hvaszxRd:m:b:n:o:p:r:f:l:")) != -1) {
+   		switch(c) {
+			case 'x': // hide comment flag
 				FLAG_HIDECOMMENT = 1;
 			break;
-			case 'z':
+			case 'z': //
 				FLAG_XPOINTONLY = 1;
 			break;
-			case 'a':
+			case 'a': // do addition to key
 				FLAG_ADD = 1;
 			break;
-			case 's':
+			case 's': // do subtraction to key
 				FLAG_SUB = 1;
 			break;
-			case 'h':
+    		case 'd': // do division to key
+				FLAG_DIVISOR = 1;
+				set_divisor((char *)optarg);
+			break;
+			case 'm': // do multiplication to key
+				FLAG_MULTIPLIER = 1;
+				set_divisor((char *)optarg);
+			break;
+			case 'h':  //hepl display
 				showhelp();
 				exit(0);
 			break;
@@ -514,14 +536,14 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 				set_publickey((char *)optarg);
 				FLAG_PUBLIC = 1;
 			break;
-			case 'r':
+			case 'r':  //range flag
 				set_range((char *)optarg);
 				FLAG_RANGE = 1;
 			break;
-			case 'R':
+			case 'R': // Random search
 				FLAG_RANDOM = 1;
 			break;
-			case 'v':
+			case 'v': // pint version
 				printf("Version %s\n",version);
 				exit(0);
 			break;
@@ -539,7 +561,7 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 #if LOG_OUT
     fprintf(stderr,"\n Start working:\n");
 #endif // LOG_OUT
-	if((FLAG_BIT || FLAG_RANGE) && FLAG_PUBLIC && FLAG_N)	{
+	if((FLAG_BIT || FLAG_RANGE) && FLAG_PUBLIC && FLAG_N){
 		if(str_output)	{
 			OUTPUT = fopen(str_output,"a");
 			if(OUTPUT == NULL)	{
@@ -567,7 +589,7 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 			M = N /2;
 		}
 
-		mpz_sub(diff,max_range,min_range);
+
 		mpz_init(base_publickey.x);
 		mpz_init(base_publickey.y);
 		mpz_init(sum_publickey.x);
@@ -578,6 +600,7 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 		mpz_init(dst_publickey.y);
 		mpz_init(base_key);
 		mpz_init(sum_key);
+
 
 		if(FLAG_RANDOM)	{
 #if LOG_OUT
@@ -661,7 +684,7 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 							gmp_fprintf(OUTPUT, "%s # - %Zx\n", str_publickey, base_key);
 						}
 					}
-						if(FLAG_SUB) {
+                    if(FLAG_SUB) {
 						Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
 						generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
 
@@ -811,18 +834,24 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 
 
 		}
-		else	{
+		else{
 
 			mpz_cdiv_q_ui(base_key,diff,M); // base_key = (range_max - range_min)/ M  - private key of subtrahend
 			//mpz_cdiv_q_ui(base_key,min_range,1);
 
-			Scalar_Multiplication(G,&base_publickey,base_key); // base_publickey = G * base_key
+			Scalar_Multiplication(G, &base_publickey, base_key); // base_publickey = G * base_key
 
-			mpz_set(sum_publickey.x,base_publickey.x);
-			mpz_set(sum_publickey.y,base_publickey.y);
+			mpz_set(sum_publickey.x, base_publickey.x);
+			mpz_set(sum_publickey.y, base_publickey.y);
 
 			mpz_set(sum_key,base_key);
 			gmp_fprintf(OUTPUT, "Sum Key %0.64Zx\n", sum_key);
+
+			if(FLAG_DIVISOR){
+                mpz_set(sum_publickey.x, target_publickey.x);
+                mpz_set(sum_publickey.y, target_publickey.y);
+			}
+
 #if LOG_OUT
     fprintf(stderr,"\n Before the loop:\n");
     gmp_fprintf(stderr, "Base random private (base_key) %0.64Zx\n", base_key);
@@ -859,7 +888,7 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 
 			int looked_up_val = -1;
 
-			for(i = 0; i < M;i++)	{
+			for(i = 0; i < M; i++){
 				Point_Negation(&sum_publickey,&negated_publickey); // sum_publickey -= base_publickey
                 Point_Addition(&sum_publickey,&target_publickey,&dst_publickey); // dst_publickey = sum_publickey + target_publickey
 
@@ -966,7 +995,7 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 							gmp_fprintf(OUTPUT, "%s # - %Zx\n", str_rmd160, sum_key);
 						}
 					}
-						if(FLAG_SUB) {
+                    if(FLAG_SUB) {
 						Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
 						generate_strrmd160(&dst_publickey,FLAG_LOOK == 0,str_rmd160);
 						if(FLAG_HIDECOMMENT)	{
@@ -977,8 +1006,28 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 							//gmp_fprintf(OUTPUT,"%s # + %Zd\n",str_rmd160,sum_key);
 							gmp_fprintf(OUTPUT, "%s # + %Zx\n", str_rmd160, sum_key);
 						}
+                    }
+					if(FLAG_DIVISOR) {
+						//Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
+                        Scalar_Multiplication(sum_publickey, &dst_publickey,inversemultiplier);
+
+						generate_strrmd160(&dst_publickey,FLAG_LOOK == 0,str_rmd160);
+						if(FLAG_HIDECOMMENT)	{
+							fprintf(OUTPUT,"%s\n",str_rmd160);
 						}
+
+						else	{
+							//gmp_fprintf(OUTPUT,"%s # + %Zd\n",str_rmd160,sum_key);
+							gmp_fprintf(OUTPUT, "%s # + %Zx\n", str_rmd160, sum_key);
+						}
+						mpz_set(sum_publickey.x,dst_publickey.x);
+                        mpz_set(sum_publickey.y,dst_publickey.y);
+                    }
+
+
 					break;
+
+
 					case 2:	//address
 					if(FLAG_ADD) {
 						generate_straddress(&dst_publickey,FLAG_LOOK == 0,str_address);
@@ -991,7 +1040,7 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 							gmp_fprintf(OUTPUT, "%s # - %Zx\n", str_address, sum_key);
 						}
 					}
-						if(FLAG_SUB) {
+                    if(FLAG_SUB) {
 						Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
 						generate_straddress(&dst_publickey,FLAG_LOOK == 0,str_address);
 						if(FLAG_HIDECOMMENT)	{
@@ -1003,6 +1052,23 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 							gmp_fprintf(OUTPUT, "%s # + %Zx\n", str_address, sum_key);
 						}
 						}
+					if(FLAG_DIVISOR) {
+						//Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
+                        Scalar_Multiplication(sum_publickey, &dst_publickey,inversemultiplier);
+
+						generate_straddress(&dst_publickey,FLAG_LOOK == 0,str_address);
+
+						if(FLAG_HIDECOMMENT)	{
+							fprintf(OUTPUT,"%s\n",str_rmd160);
+						}
+
+						else	{
+							//gmp_fprintf(OUTPUT,"%s # + %Zd\n",str_rmd160,sum_key);
+							gmp_fprintf(OUTPUT, "%s # + %Zx\n", str_rmd160, sum_key);
+						}
+						mpz_set(sum_publickey.x,dst_publickey.x);
+                        mpz_set(sum_publickey.y,dst_publickey.y);
+                    }
 					break;
 				}
 
@@ -1081,6 +1147,298 @@ target_publickey = 033365e04749f7cd28bc51239d916418ca5005ab2372d5f0fb6fa40374551
 		mpz_clear(sum_key);
 		if(HASHES_PK) free(HASHES_PK);
 		if(HASHES_PK2) free(HASHES_PK2);
+	}
+	else if(FLAG_PUBLIC && FLAG_N && (FLAG_DIVISOR || FLAG_MULTIPLIER || FLAG_ADD || FLAG_SUB)){
+        if(str_output)	{
+			OUTPUT = fopen(str_output,"a");
+			if(OUTPUT == NULL)	{
+				fprintf(stderr,"can't open file %s\n",str_output);
+				OUTPUT = stdout;
+			}
+		}
+		else	{
+			OUTPUT = stdout;
+		}
+
+		M = N;
+
+		mpz_init(base_publickey.x);
+		mpz_init(base_publickey.y);
+		mpz_init(sum_publickey.x);
+		mpz_init(sum_publickey.y);
+		mpz_init(negated_publickey.x);
+		mpz_init(negated_publickey.y);
+		mpz_init(dst_publickey.x);
+		mpz_init(dst_publickey.y);
+		mpz_init(base_key);
+		mpz_init(sum_key);
+
+		if(FLAG_RANDOM)	{
+
+#if LOG_OUT
+    fprintf(stderr,"\n Do the Random search:\n");
+#endif // LOG_OUT
+
+			gmp_randinit_mt(state);
+			gmp_randseed_ui(state, ((int)clock()) + ((int)time(NULL)) );
+
+			// Quicksort approach
+     		//sort_str_array(RANGE_PK, SIZE_PK);
+
+     		// Hashes approach
+			// fprintf(stderr,"install hash;\n");
+			HASHES_PK = install_hash();
+			if(!HASHES_PK){
+                fprintf(stderr,"Error in hash 1 install!!!");
+                return -1;
+			}
+			modify_array();
+
+        	HASHES_PK2 = install_hash();
+			if(!HASHES_PK2){
+                fprintf(stderr,"error n hash 2 install!!!!!!");
+                return -1;
+			}
+			modify_array2();
+
+
+			int looked_up_val = -1; // Have we found the key in the range
+
+			for(i = 0; i < M;i++){
+
+				mpz_urandomm(base_key,state,diff);
+				Scalar_Multiplication(G,&base_publickey,base_key);
+				Point_Negation(&base_publickey,&negated_publickey);
+				Point_Addition(&base_publickey,&target_publickey,&dst_publickey);
+                mpz_invert(inversemultiplier,base_key,EC.n);
+
+
+#if LOG_OUT
+    fprintf(stderr,"\n Before the loop:\n");
+    gmp_fprintf(stderr, "Base random private (base_key) %0.64Zx\n", base_key);
+	gmp_fprintf(stderr, "Base Public Key: %0.64Zx, %0.64Zx\n", base_publickey.x, base_publickey.y);
+	gmp_fprintf(stderr, "Negated Public Key %0.64Zx, %0.64Zx\n", negated_publickey.x, negated_publickey.y);
+	gmp_fprintf(stderr, "First iteration dst Key %0.64Zx, %0.64Zx\n", dst_publickey.x,dst_publickey.y);
+#endif // LOG_OUT
+
+                if(FLAG_ADD) {
+
+                }
+                else if(FLAG_SUB){
+   					Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
+                }
+                else if(FLAG_MULTIPLIER){
+                    Scalar_Multiplication(target_publickey, &dst_publickey,base_key);
+                }
+                else if(FLAG_DIVISOR){
+                    Scalar_Multiplication(target_publickey, &dst_publickey,inversemultiplier);
+                }
+
+
+                switch(FLAG_FORMART)	{
+					case 0: //Publickey
+                        generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+					break;
+					case 1: //rmd160
+						generate_strrmd160(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+					break;
+					case 2:	//address
+						generate_straddress(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+					break;
+				}
+
+                //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
+				//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+				int hash_val =  Hash2(str_publickey);//
+
+				looked_up_val = HASHES_PK[hash_val]-1;
+				//fprintf(OUTPUT,"%s\n",str_publickey);
+				if (looked_up_val>=0){
+                         int looked_up_val2 = HASHES_PK2[Hash3(str_publickey)]-1; ; //  recheck collision
+                         if(looked_up_val2!=looked_up_val){
+                            looked_up_val = -1;
+                         }
+                }
+
+
+				if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
+							//fprintf(OUTPUT,"%s\n",str_publickey);
+							gmp_fprintf(OUTPUT, "%0.64Zx\n", dst_publickey.x);
+						}
+						else if(FLAG_XPOINTONLY)	{
+							//fprintf(OUTPUT,"%s\n",str_publickey);
+							char mode_char = (FLAG_ADD==1)?'+':'-';
+							gmp_fprintf(OUTPUT, "%0.64Zx # %c %Zx\n", dst_publickey.x, mode_char, base_key);
+						}
+						else if(FLAG_HIDECOMMENT)	{
+							fprintf(OUTPUT,"%s\n",str_publickey);
+						}
+						else	{
+							//gmp_fprintf(OUTPUT,"%s # - %Zd\n",str_publickey,base_key);
+							char mode_char = (FLAG_ADD==1)?'-':'+';
+							gmp_fprintf(OUTPUT, "%s # %c %Zx\n", str_publickey, mode_char, base_key);
+						}
+
+
+				if (i % 10000 == 0) {
+                    double_t perc = calc_perc(i, M);
+                    printf("\r[+] Percent Complete: %0.2lf", perc);
+                    fflush(stdout);
+                }
+                if(looked_up_val>=0 && looked_up_val<SIZE_DB){
+                    break;
+                }
+			}
+
+			if (i = M) {// ???
+                    double_t perc = calc_perc(i, M);
+                    //printf("\r[+] Percent Complete: %0.6lf", perc);
+					printf("\r[+] Percent Complete: Finished");
+                    fflush(stdout);
+               }
+		} // random finished
+        else{
+
+ 				char mode_char = '+';
+
+                mpz_set(sum_publickey.x, target_publickey.x);
+                mpz_set(sum_publickey.y, target_publickey.y);
+
+
+                if(FLAG_ADD) {
+                }
+                else if(FLAG_SUB){
+                    mode_char = '-';
+                }
+                else if(FLAG_MULTIPLIER){
+                    mpz_set(base_key, divisor);
+                    mode_char = 'x';
+                }
+                else if(FLAG_DIVISOR){
+                    mpz_invert(inversemultiplier,divisor,EC.n);
+                    mpz_set(base_key, inversemultiplier);
+                    mode_char = '/';
+                }
+
+#if LOG_OUT
+    fprintf(stderr,"\n Before the loop:\n");
+	gmp_fprintf(stderr, "Base Sum Public Key %0.64Zx, %0.64Zx\n", sum_publickey.x, sum_publickey.y);
+
+#endif // LOG_OUT
+
+			// sort the array of keys
+			// sort_str_array(RANGE_PK, SIZE_PK);
+			// fprintf(stderr,"install hash;\n");
+			HASHES_PK = install_hash();
+			if(!HASHES_PK){
+               	fprintf(stderr,"error in hash 1 install!!!");
+                return -1;
+			}
+			modify_array();
+
+			HASHES_PK2 = install_hash2();
+			if(!HASHES_PK2){
+           		fprintf(stderr,"error in hash 2 install!!!");
+               	return -1;
+			}
+			modify_array2();
+
+			int looked_up_val = -1;
+
+			for(i = 0; i < M; i++){
+				Point_Negation(&sum_publickey,&negated_publickey); // sum_publickey -= base_publickey
+
+#if LOG_OUT
+				gmp_fprintf(stderr, "Loop %d :Base Sum Public Key2 %0.64Zx, %0.64Zx\n", i, sum_publickey.x, sum_publickey.y);
+				gmp_fprintf(OUTPUT, "Loop %d : Addition Dst Key %0.64Zx, %0.64Zx\n", i, dst_publickey.x, dst_publickey.y);
+
+#endif // LOG_OUT
+
+
+                if(FLAG_ADD) {
+                    Point_Addition(&sum_publickey,&target_publickey,&dst_publickey); // dst_publickey = sum_publickey + target_publickey
+                }
+                else if(FLAG_SUB){
+   					Point_Addition(&negated_publickey,&target_publickey,&dst_publickey);
+                }
+                else if(FLAG_MULTIPLIER){
+                    Scalar_Multiplication(sum_publickey, &dst_publickey,divisor);
+                }
+                else if(FLAG_DIVISOR){
+                    Scalar_Multiplication(sum_publickey, &dst_publickey,inversemultiplier);
+                }
+
+
+
+                switch(FLAG_FORMART)	{
+					case 0: //Publickey
+                        generate_strpublickey(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+					break;
+					case 1: //rmd160
+						generate_strrmd160(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+					break;
+					case 2:	//address
+						generate_straddress(&dst_publickey,FLAG_LOOK == 0,str_publickey);
+					break;
+				}
+
+                //looked_up_val = look_up_pk(str_publickey, RANGE_PK, SIZE_PK);
+				//looked_up_val = look_up_pk_binary(str_publickey, RANGE_PK, SIZE_PK);
+				int hash_val =  Hash2(str_publickey);//
+
+				looked_up_val = HASHES_PK[hash_val]-1;
+				//fprintf(OUTPUT,"%s\n",str_publickey);
+				if (looked_up_val>=0){
+                         int looked_up_val2 = HASHES_PK2[Hash3(str_publickey)]-1; ; //  recheck collision
+                         if(looked_up_val2!=looked_up_val){
+                            looked_up_val = -1;
+                         }
+                }
+
+
+				if(FLAG_HIDECOMMENT && FLAG_XPOINTONLY)	{
+							//fprintf(OUTPUT,"%s\n",str_publickey);
+							gmp_fprintf(OUTPUT, "%0.64Zx\n", dst_publickey.x);
+						}
+						else if(FLAG_XPOINTONLY)	{
+							//fprintf(OUTPUT,"%s\n",str_publickey);
+							gmp_fprintf(OUTPUT, "%0.64Zx # %c %Zx\n", dst_publickey.x, mode_char, base_key);
+						}
+						else if(FLAG_HIDECOMMENT)	{
+							fprintf(OUTPUT,"%s\n",str_publickey);
+						}
+						else	{
+							//gmp_fprintf(OUTPUT,"%s # - %Zd\n",str_publickey,base_key);
+							gmp_fprintf(OUTPUT, "%s # %c %Zx\n", str_publickey, mode_char, base_key);
+						}
+
+
+				if (i % 10000 == 0) {
+                    double_t perc = calc_perc(i, M);
+                    printf("\r[+] Percent Complete: %0.2lf", perc);
+                    fflush(stdout);
+                }
+                if(looked_up_val>=0 && looked_up_val<SIZE_DB){
+                    break;
+                }
+
+
+                mpz_set(sum_publickey.x,dst_publickey.x);
+                mpz_set(sum_publickey.y,dst_publickey.y);
+                if(FLAG_SUB){
+                    mpz_set(negated_publickey.x,dst_publickey.x);
+                    mpz_set(negated_publickey.y,dst_publickey.y);
+                }
+
+        }
+        if (i = M) {// ???
+                    double_t perc = calc_perc(i, M);
+                    //printf("\r[+] Percent Complete: %0.6lf", perc);
+					printf("\r[+] Percent Complete: Finished");
+                    fflush(stdout);
+               }
+
+        }
 	}
 	else	{
 #ifdef DEBUG
@@ -1456,3 +1814,14 @@ void generate_straddress(struct Point *publickey,bool compress,char *dst)	{
 		fprintf(stderr,"error b58enc\n");
 	}
 }
+
+void set_divisor(char *param)	{
+	if(param[0] == '0' && param[0] == 'x'){
+		mpz_init_set_str(divisor,param,16);
+	}
+	else	{
+		mpz_init_set_str(divisor,param,10);
+	}
+}
+
+
